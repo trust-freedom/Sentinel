@@ -309,6 +309,7 @@ public class SphU {
      */
     public static Entry entry(String name, int resourceType, EntryType trafficType, Object[] args)
         throws BlockException {
+        // 注意第4个参数值为1，表示当前请求可以增加多少个计数
         return Env.sph.entryWithType(name, resourceType, trafficType, 1, args);
     }
 

@@ -77,10 +77,12 @@ public class ClusterBuilderSlot extends AbstractLinkedProcessorSlot<DefaultNode>
     public void entry(Context context, ResourceWrapper resourceWrapper, DefaultNode node, int count,
                       boolean prioritized, Object... args)
         throws Throwable {
+        // 如果当前slot的clusterNode为空，则创建
         if (clusterNode == null) {
             synchronized (lock) {
                 if (clusterNode == null) {
                     // Create the cluster node.
+                    // 根据资源名、资源类型创建ClusterNode，说明ClusterNode只与资源有关系，与context没关系
                     clusterNode = new ClusterNode(resourceWrapper.getName(), resourceWrapper.getResourceType());
                     HashMap<ResourceWrapper, ClusterNode> newMap = new HashMap<>(Math.max(clusterNodeMap.size(), 16));
                     newMap.putAll(clusterNodeMap);
@@ -90,11 +92,13 @@ public class ClusterBuilderSlot extends AbstractLinkedProcessorSlot<DefaultNode>
                 }
             }
         }
+        // 设置DefaultNode的ClusterNode
         node.setClusterNode(clusterNode);
 
         /*
          * if context origin is set, we should get or create a new {@link Node} of
          * the specific origin.
+         * 如果当前请求context的origin不为空，创建originNode，并设置
          */
         if (!"".equals(context.getOrigin())) {
             Node originNode = node.getClusterNode().getOrCreateOriginNode(context.getOrigin());

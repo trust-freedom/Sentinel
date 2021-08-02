@@ -25,10 +25,12 @@ public abstract class AbstractRule implements Rule {
 
     /**
      * Resource name.
+     * 资源名称
      */
     private String resource;
 
     /**
+     * 请求来源
      * <p>
      * Application name that will be limited by origin.
      * The default limitApp is {@code default}, which means allowing all origin apps.

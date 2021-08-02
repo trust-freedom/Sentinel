@@ -132,6 +132,19 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
      */
     private volatile Map<String, DefaultNode> map = new HashMap<String, DefaultNode>(10);
 
+    /**
+     * 此时已经在ROOT下增加了EntranceNode（在创建Context时）
+     * 而NodeSelectorSlot是构建调用链路，那么只剩下创建DefaultNode，并添加到调用树中
+     * 所以，NodeSelectorSlot主要是为了创建DefaultNode，并添加到调用树中
+     *
+     * @param context         current {@link Context}
+     * @param resourceWrapper current resource
+     * @param obj
+     * @param count           tokens needed
+     * @param prioritized     whether the entry is prioritized
+     * @param args            parameters of the original call
+     * @throws Throwable
+     */
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, Object obj, int count, boolean prioritized, Object... args)
         throws Throwable {
@@ -153,24 +166,31 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
          * The answer is all {@link DefaultNode}s with same resource name share one
          * {@link ClusterNode}. See {@link ClusterBuilderSlot} for detail.
          */
+        // 根据context name从缓存中获取DefaultNode
+        // 每个resource都有自己的NodeSelectorSlot，那么就会为不同的context分别创建DefaultNode，放于缓存
         DefaultNode node = map.get(context.getName());
         if (node == null) {
             synchronized (this) {
                 node = map.get(context.getName());
                 if (node == null) {
+                    // 创建一个DefaultNode，并放入缓存map
                     node = new DefaultNode(resourceWrapper, null);
                     HashMap<String, DefaultNode> cacheMap = new HashMap<String, DefaultNode>(map.size());
                     cacheMap.putAll(map);
                     cacheMap.put(context.getName(), node);
                     map = cacheMap;
                     // Build invocation tree
+                    // 将新建node添加到调用树中
                     ((DefaultNode) context.getLastNode()).addChild(node);
                 }
 
             }
         }
 
+        // 给context设置currentNode为创建的DefaultNode
         context.setCurNode(node);
+
+        // 触发下一个节点
         fireEntry(context, resourceWrapper, node, count, prioritized, args);
     }
 

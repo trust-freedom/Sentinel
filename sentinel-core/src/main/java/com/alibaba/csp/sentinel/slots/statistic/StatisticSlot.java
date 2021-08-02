@@ -56,18 +56,27 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
                       boolean prioritized, Object... args) throws Throwable {
         try {
             // Do some checking.
+            // 调用SlotChain中后续的所有Slot，完成所有规则检测
+            // 其在执行过程中可能会抛出异常，例如，流控规则检测未通过，抛出BlockException
             fireEntry(context, resourceWrapper, node, count, prioritized, args);
 
             // Request passed, add thread count and pass count.
+            // 代码能走到这里，说明前面所有规则检测全部通过，此时就可以将该请求统计到相应数据中了
+            // 增加线程数据（DefaultNode、ClusterNode都增加）
             node.increaseThreadNum();
+            // 增加通过的请求数量（DefaultNode、ClusterNode都增加）
+            // 涉及QPS滑动窗口统计
             node.addPassRequest(count);
 
+            // 如果originNode不为空，也增加originNode的线程数和通过请求数
+            // 是为了限制
             if (context.getCurEntry().getOriginNode() != null) {
                 // Add count for origin node.
                 context.getCurEntry().getOriginNode().increaseThreadNum();
                 context.getCurEntry().getOriginNode().addPassRequest(count);
             }
 
+            // 如果为EntryType.IN，增加对进入的统一统计，可能在SystemRule有用
             if (resourceWrapper.getEntryType() == EntryType.IN) {
                 // Add count for global inbound entry node for global statistics.
                 Constants.ENTRY_NODE.increaseThreadNum();
@@ -75,6 +84,7 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
             }
 
             // Handle pass event with registered entry callback handlers.
+            // 使用注册的callback handlers，调用pass事件
             for (ProcessorSlotEntryCallback<DefaultNode> handler : StatisticSlotCallbackRegistry.getEntryCallbacks()) {
                 handler.onPass(context, resourceWrapper, node, count, args);
             }
@@ -90,6 +100,7 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
                 Constants.ENTRY_NODE.increaseThreadNum();
             }
             // Handle pass event with registered entry callback handlers.
+            // 使用注册的callback handlers，调用pass事件
             for (ProcessorSlotEntryCallback<DefaultNode> handler : StatisticSlotCallbackRegistry.getEntryCallbacks()) {
                 handler.onPass(context, resourceWrapper, node, count, args);
             }
@@ -109,6 +120,7 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
             }
 
             // Handle block event with registered entry callback handlers.
+            // 使用注册的callback handlers，调用block事件
             for (ProcessorSlotEntryCallback<DefaultNode> handler : StatisticSlotCallbackRegistry.getEntryCallbacks()) {
                 handler.onBlocked(e, context, resourceWrapper, node, count, args);
             }

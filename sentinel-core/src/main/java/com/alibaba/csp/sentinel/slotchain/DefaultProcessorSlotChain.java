@@ -21,6 +21,7 @@ import com.alibaba.csp.sentinel.context.Context;
  * @author qinan.qn
  * @author jialiang.linjl
  */
+// 这是一个单向链表，默认包含一个节点，且有两个指针first与end同时指向这个节点
 public class DefaultProcessorSlotChain extends ProcessorSlotChain {
 
     AbstractLinkedProcessorSlot<?> first = new AbstractLinkedProcessorSlot<Object>() {
@@ -72,6 +73,9 @@ public class DefaultProcessorSlotChain extends ProcessorSlotChain {
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, Object t, int count, boolean prioritized, Object... args)
         throws Throwable {
+        // 转向下一个节点
+        // 应该是因为transformEntry()好像本来就是把第三个参数赋值一下，然后就调用entry
+        // 而first节点的entry什么也没做，就直接fireEntry结束了entry，调用了next
         first.transformEntry(context, resourceWrapper, t, count, prioritized, args);
     }
 

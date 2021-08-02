@@ -46,8 +46,11 @@ public class FlowRuleChecker {
         if (ruleProvider == null || resource == null) {
             return;
         }
+
+        // 获取到指定资源的所有流控规则
         Collection<FlowRule> rules = ruleProvider.apply(resource.getName());
         if (rules != null) {
+            // 逐个应用流控规则，若无法通过则抛出异常，后续规则不再应用
             for (FlowRule rule : rules) {
                 if (!canPassCheck(rule, context, node, count, prioritized)) {
                     throw new FlowException(rule.getLimitApp(), rule);

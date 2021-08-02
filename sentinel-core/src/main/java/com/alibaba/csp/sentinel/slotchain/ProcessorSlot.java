@@ -43,6 +43,8 @@ public interface ProcessorSlot<T> {
 
     /**
      * Means finish of {@link #entry(Context, ResourceWrapper, Object, int, boolean, Object...)}.
+     * 结束entry
+     * AbstractLinkedProcessorSlot#fireEntry() 会看是否有next，如果有，调用next.transformEntry()，其实就是转换下，再下一个slot的entry
      *
      * @param context         current {@link Context}
      * @param resourceWrapper current resource

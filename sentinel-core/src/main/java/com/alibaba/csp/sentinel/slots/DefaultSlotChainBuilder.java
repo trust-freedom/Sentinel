@@ -37,10 +37,15 @@ public class DefaultSlotChainBuilder implements SlotChainBuilder {
 
     @Override
     public ProcessorSlotChain build() {
+        // 创建只有一个AbstractLinkedProcessorSlot的ProcessorSlotChain，first和end引用都指向这个slot
         ProcessorSlotChain chain = new DefaultProcessorSlotChain();
 
+        // 通过SPI方式构建Slot列表，并排序
+        // ParamFlowSlot 在 sentinel-parameter-flow-control 中
+        // GatewayFlowSlot 在 sentinel-api-gateway-adapter-common 中
         List<ProcessorSlot> sortedSlotList = SpiLoader.of(ProcessorSlot.class).loadInstanceListSorted();
         for (ProcessorSlot slot : sortedSlotList) {
+            // 跳过不是AbstractLinkedProcessorSlot类型的
             if (!(slot instanceof AbstractLinkedProcessorSlot)) {
                 RecordLog.warn("The ProcessorSlot(" + slot.getClass().getCanonicalName() + ") is not an instance of AbstractLinkedProcessorSlot, can't be added into ProcessorSlotChain");
                 continue;

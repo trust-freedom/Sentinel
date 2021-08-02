@@ -118,15 +118,21 @@ public class ContextUtil {
     }
 
     protected static Context trueEnter(String name, String origin) {
+        // 尝试着从ThreadLocal中获取Context
         Context context = contextHolder.get();
+        // 若ThreadLocal中没有context，则尝试着从缓存map中获取
         if (context == null) {
+            // 缓存map的key为context名称，value为EntranceNode
             Map<String, DefaultNode> localCacheNameMap = contextNameNodeMap;
+            // 根据context name获取EntranceNode
             DefaultNode node = localCacheNameMap.get(name);
+            // 如果EntranceNode为空，则构建，因为context需要EntranceNode
             if (node == null) {
+                // 如果缓存map.size 大于 context数量的最大阈值2000，则直接返回NullContext
                 if (localCacheNameMap.size() > Constants.MAX_CONTEXT_NAME_SIZE) {
-                    setNullContext();
+                    setNullContext(); // 设置NullContext到threadlocal
                     return NULL_CONTEXT;
-                } else {
+                } else {  // 加锁，并双重检测锁DCL——为了防止并发创建，创建EntranceNode
                     LOCK.lock();
                     try {
                         node = contextNameNodeMap.get(name);
@@ -135,10 +141,17 @@ public class ContextUtil {
                                 setNullContext();
                                 return NULL_CONTEXT;
                             } else {
+                                // 创建一个EntranceNode
                                 node = new EntranceNode(new StringResourceWrapper(name, EntryType.IN), null);
                                 // Add entrance node.
+                                // 将新建的EntranceNode添加到ROOT
+                                // ROOT是当前机器/应用唯一且公共的统计根节点，是创建的EntranceNode的parent，也是一个EntranceNode
+                                // ROOT = new EntranceNode(new StringResourceWrapper(ROOT_ID, EntryType.IN),
+                                //                         new ClusterNode(ROOT_ID, ResourceTypeConstants.COMMON))
                                 Constants.ROOT.addChild(node);
 
+                                // 将新建EntranceNode写入到缓存map
+                                // 为了防止“迭代稳定性问题”——iterator stable——对于共享集合的写操作
                                 Map<String, DefaultNode> newMap = new HashMap<>(contextNameNodeMap.size() + 1);
                                 newMap.putAll(contextNameNodeMap);
                                 newMap.put(name, node);
@@ -150,8 +163,11 @@ public class ContextUtil {
                     }
                 }
             }
+            // 将context的name与entranceNode封装为context
             context = new Context(node, name);
+            // 初始化context的来源
             context.setOrigin(origin);
+            // 将context写入到ThreadLocal
             contextHolder.set(context);
         }
 

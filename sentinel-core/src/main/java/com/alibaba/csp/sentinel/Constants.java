@@ -33,8 +33,10 @@ public final class Constants {
 
     public static final String SENTINEL_VERSION = VersionUtil.getVersion("1.8.2");
 
-    public final static int MAX_CONTEXT_NAME_SIZE = 2000;
-    public final static int MAX_SLOT_CHAIN_SIZE = 6000;
+    public final static int MAX_CONTEXT_NAME_SIZE = 2000;// ConTextUtil中私有contextNameNodeMap的最大size
+                                                         // 也就是说最多有2000个名字的context，再多就不能做熔断限流了？好像没看到从map中删除的逻辑？
+    public final static int MAX_SLOT_CHAIN_SIZE = 6000;  // CtSph的私有ChainMap最大size
+                                                         // 也就是说最多维护6000个资源的slotChain，再多就不能做熔断限流了？？
 
     public final static String ROOT_ID = "machine-root";
     public final static String CONTEXT_DEFAULT_NAME = "sentinel_default_context";

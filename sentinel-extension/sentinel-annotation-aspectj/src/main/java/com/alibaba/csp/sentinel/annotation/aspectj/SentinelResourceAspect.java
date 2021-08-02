@@ -32,13 +32,15 @@ import java.lang.reflect.Method;
  *
  * @author Eric Zhao
  */
-@Aspect
+@Aspect  // AspectJ切面
 public class SentinelResourceAspect extends AbstractSentinelAspectSupport {
 
+    // 指定切入点为标注了@SentinelResource注解的方法
     @Pointcut("@annotation(com.alibaba.csp.sentinel.annotation.SentinelResource)")
     public void sentinelResourceAnnotationPointcut() {
     }
 
+    // 指定此为环绕通知 around advice，使用sentinelResourceAnnotationPointcut()指定的切入点
     @Around("sentinelResourceAnnotationPointcut()")
     public Object invokeResourceWithSentinel(ProceedingJoinPoint pjp) throws Throwable {
         Method originMethod = resolveMethod(pjp);
@@ -53,7 +55,15 @@ public class SentinelResourceAspect extends AbstractSentinelAspectSupport {
         int resourceType = annotation.resourceType();
         Entry entry = null;
         try {
+            /**
+             * 要织入的、增强的sentinel的熔断限流功能
+             *  resourceName：资源名
+             *  resourceType：默认为0，代表common，具体见ResourceTypeConstants
+             *  entryType：EntryType.IN 或 EntryType.OUT
+             */
             entry = SphU.entry(resourceName, resourceType, entryType, pjp.getArgs());
+
+            // 调用目标方法
             return pjp.proceed();
         } catch (BlockException ex) {
             return handleBlockException(pjp, annotation, ex);
