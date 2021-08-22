@@ -98,6 +98,7 @@ public class EntranceNode extends DefaultNode {
         return r;
     }
 
+    // EntranceNode计算passQps的方式是计算所有子节点的passQps之和
     @Override
     public double passQps() {
         double r = 0;

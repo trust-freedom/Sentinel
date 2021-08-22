@@ -86,13 +86,13 @@ public class ClusterBuilderSlot extends AbstractLinkedProcessorSlot<DefaultNode>
                     clusterNode = new ClusterNode(resourceWrapper.getName(), resourceWrapper.getResourceType());
                     HashMap<ResourceWrapper, ClusterNode> newMap = new HashMap<>(Math.max(clusterNodeMap.size(), 16));
                     newMap.putAll(clusterNodeMap);
-                    newMap.put(node.getId(), clusterNode);
+                    newMap.put(node.getId(), clusterNode); // DefaultNode.getId()返回的是ResourceWrapper
 
                     clusterNodeMap = newMap;
                 }
             }
         }
-        // 设置DefaultNode的ClusterNode
+        // 将clusterNode塞到DefaultNode中去
         node.setClusterNode(clusterNode);
 
         /*

@@ -67,9 +67,13 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
     @Override
     public boolean tryPass(Context context) {
         // Template implementation.
+        // 熔断器状态为关闭状态，则请求可以通过
         if (currentState.get() == State.CLOSED) {
             return true;
         }
+
+        // 熔断器状态为打开状态，此时再查看
+        // 若下次时间窗时间点已经到达，且熔断器成功由Open变为了Half-Open，则请求通过
         if (currentState.get() == State.OPEN) {
             // For half-open state we allow a request for probing.
             return retryTimeoutArrived() && fromOpenToHalfOpen(context);
@@ -102,8 +106,12 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
     }
 
     protected boolean fromOpenToHalfOpen(Context context) {
+        // 是否成功将状态从OPEN->HALF_OPEN
         if (currentState.compareAndSet(State.OPEN, State.HALF_OPEN)) {
+            // 调用观察者的onStateChange方法
             notifyObservers(State.OPEN, State.HALF_OPEN, null);
+            // 当前entry操作被放过执行，并在结束时观察当前entry是否有BlockError
+            // 下面的whenTerminate是为了临时解决 Circuit breaker will remain half-open state forever when the request is blocked by upcoming rules #1638
             Entry entry = context.getCurEntry();
             entry.whenTerminate(new BiConsumer<Context, Entry>() {
                 @Override
@@ -111,6 +119,9 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
                     // Note: This works as a temporary workaround for https://github.com/alibaba/Sentinel/issues/1638
                     // Without the hook, the circuit breaker won't recover from half-open state in some circumstances
                     // when the request is actually blocked by upcoming rules (not only degrade rules).
+                    // 真正的在检测请求通过时，将HALF_OPEN->CLOSED的是CircuitBreaker#onRequestComplete
+                    // 由于熔断错误统计是统计不包括BlockException的其它Exception
+                    // 所以当前请求虽然没有保存，但比如FlowSlot触发限流的BlockException时，及时错误数低于阈值，也没法HALF_OPEN->CLOSED
                     if (entry.getBlockError() != null) {
                         // Fallback to OPEN due to detecting request is blocked
                         currentState.compareAndSet(State.HALF_OPEN, State.OPEN);

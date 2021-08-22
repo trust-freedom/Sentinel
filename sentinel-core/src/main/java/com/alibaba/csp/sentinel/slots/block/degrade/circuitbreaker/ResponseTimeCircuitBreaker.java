@@ -68,46 +68,58 @@ public class ResponseTimeCircuitBreaker extends AbstractCircuitBreaker {
         if (entry == null) {
             return;
         }
+        // 当前Entry完成时间
         long completeTime = entry.getCompleteTimestamp();
         if (completeTime <= 0) {
             completeTime = TimeUtil.currentTimeMillis();
         }
+        // 响应时间
         long rt = completeTime - entry.getCreateTimestamp();
+        // 大于熔断规则设置阈值，记录为慢请求
         if (rt > maxAllowedRt) {
             counter.slowCount.add(1);
         }
+        // 记录总数
         counter.totalCount.add(1);
 
+        // 处理断路器状态
         handleStateChangeWhenThresholdExceeded(rt);
     }
 
     private void handleStateChangeWhenThresholdExceeded(long rt) {
+        // 当前OPEN状态，直接返回
         if (currentState.get() == State.OPEN) {
             return;
         }
-        
+
+        // 当前HALF_OPEN状态
         if (currentState.get() == State.HALF_OPEN) {
             // In detecting request
+            // 当前是检测请求，还是大于熔断规则设置阈值，HALF_OPEN->OPEN
             // TODO: improve logic for half-open recovery
             if (rt > maxAllowedRt) {
                 fromHalfOpenToOpen(1.0d);
-            } else {
+            } else { // HALF_OPEN->CLOSED
                 fromHalfOpenToClose();
             }
             return;
         }
 
-        List<SlowRequestCounter> counters = slidingCounter.values();
+        // 下面操作根据统计值判断是否将状态置为OPEN，即开启熔断
+        // 获取整个滑动窗口的聚合值列表
+        List<SlowRequestCounter> counters = slidingCounter.values(); // SlowRequestCounter
         long slowCount = 0;
         long totalCount = 0;
         for (SlowRequestCounter counter : counters) {
             slowCount += counter.slowCount.sum();
             totalCount += counter.totalCount.sum();
         }
+        // 没有达到最小请求数量
         if (totalCount < minRequestAmount) {
             return;
         }
         double currentRatio = slowCount * 1.0d / totalCount;
+        // 当前慢请求比例 大于 规则设置的阈值
         if (currentRatio > maxSlowRequestRatio) {
             transformToOpen(currentRatio);
         }

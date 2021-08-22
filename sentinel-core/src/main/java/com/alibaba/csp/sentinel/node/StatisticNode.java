@@ -198,6 +198,9 @@ public class StatisticNode implements Node {
 
     @Override
     public double passQps() {
+        // rollingCounterInSecond.pass() 当前时间窗中统计的通过的请求数量
+        // rollingCounterInSecond.getWindowIntervalInSec() 时间窗长度，以秒为单位
+        // 这两个数相除，计算出的就是QPS
         return rollingCounterInSecond.pass() / rollingCounterInSecond.getWindowIntervalInSec();
     }
 

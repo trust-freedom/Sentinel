@@ -318,6 +318,7 @@ public abstract class LeapArray<T> {
 
     /**
      * Get aggregated value list for entire sliding window.
+     * 获取整个滑动窗口的聚合值列表
      * The list will only contain value from "valid" buckets.
      *
      * @return aggregated value list for entire sliding window

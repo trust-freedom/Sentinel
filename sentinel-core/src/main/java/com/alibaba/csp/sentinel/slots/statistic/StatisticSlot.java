@@ -88,7 +88,8 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
             for (ProcessorSlotEntryCallback<DefaultNode> handler : StatisticSlotCallbackRegistry.getEntryCallbacks()) {
                 handler.onPass(context, resourceWrapper, node, count, args);
             }
-        } catch (PriorityWaitException ex) {
+        } catch (PriorityWaitException ex) { // FlowSlot-DefaultController#canPass处理了优先级高的请求的提前抢占
+                                             // sleep一段时间后上抛PriorityWaitException，此处捕获的操作和pass的操作类似
             node.increaseThreadNum();
             if (context.getCurEntry().getOriginNode() != null) {
                 // Add count for origin node.
@@ -106,6 +107,7 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
             }
         } catch (BlockException e) {
             // Blocked, set block exception to current entry.
+            // 当前请求被阻塞，给context的curEntry设置BlockError
             context.getCurEntry().setBlockError(e);
 
             // Add block count.
@@ -128,6 +130,7 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
             throw e;
         } catch (Throwable e) {
             // Unexpected internal error, set error to current entry.
+            // 给context的CurEntry设置异常
             context.getCurEntry().setError(e);
 
             throw e;
@@ -155,6 +158,7 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
         }
 
         // Handle exit event with registered exit callback handlers.
+        // 使用注册的ProcessorSlotExitCallback，处理退出事件
         Collection<ProcessorSlotExitCallback> exitCallbacks = StatisticSlotCallbackRegistry.getExitCallbacks();
         for (ProcessorSlotExitCallback handler : exitCallbacks) {
             handler.onExit(context, resourceWrapper, count, args);

@@ -165,6 +165,7 @@ public class CtSph implements Sph {
         }
 
         // 创建一个资源操作对象
+        // 会为context设置curEntry，即当前的entry，并作为context之前的curEntry的child
         Entry e = new CtEntry(resourceWrapper, chain, context);
         try {
             // 对资源进行操作：进入slot

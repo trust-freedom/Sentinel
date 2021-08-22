@@ -172,6 +172,7 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
         if (node == null) {
             synchronized (this) {
                 node = map.get(context.getName());
+                // 如果resource对应的NodeSelectorSlot中没有当前context对应的DefaultNode
                 if (node == null) {
                     // 创建一个DefaultNode，并放入缓存map
                     node = new DefaultNode(resourceWrapper, null);
@@ -181,6 +182,9 @@ public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
                     map = cacheMap;
                     // Build invocation tree
                     // 将新建node添加到调用树中
+                    // 将当前node作为context的最后一个节点的子节点添加进去
+                    // 如果context的curEntry.parent.curNode为null，则添加到entranceNode中去
+                    // 否则添加到context的curEntry.parent.curNode中去
                     ((DefaultNode) context.getLastNode()).addChild(node);
                 }
 

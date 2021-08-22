@@ -66,28 +66,45 @@ public class FlowRuleChecker {
 
     public boolean canPassCheck(/*@NonNull*/ FlowRule rule, Context context, DefaultNode node, int acquireCount,
                                                     boolean prioritized) {
+        // 从规则中获取要限定的来源
         String limitApp = rule.getLimitApp();
+        // 若限流的来源为null，则请求直接通过，流控规则默认值起码是default
         if (limitApp == null) {
             return true;
         }
 
+        // 集群流控规则
         if (rule.isClusterMode()) {
             return passClusterCheck(rule, context, node, acquireCount, prioritized);
         }
 
+        // 单机流控规则
         return passLocalCheck(rule, context, node, acquireCount, prioritized);
     }
 
     private static boolean passLocalCheck(FlowRule rule, Context context, DefaultNode node, int acquireCount,
                                           boolean prioritized) {
+        // 根据请求和策略选择Node
         Node selectedNode = selectNodeByRequesterAndStrategy(rule, context, node);
+        // 如没有选择出node，则直接返回true，表示通过检测
         if (selectedNode == null) {
             return true;
         }
 
+        /**
+         * 使用规则进行逐项检测
+         * getRater返回的是TrafficShapingController，对应dashboard页面上的流控效果
+         *   DefaultController：快速失败
+         *   WarmUpController
+         *   RateLimiterController：排队等待
+         *   WarmUpRateLimiterController
+         */
         return rule.getRater().canPass(selectedNode, acquireCount, prioritized);
     }
 
+    /**
+     * 选取关联Node
+     */
     static Node selectReferenceNode(FlowRule rule, Context context, DefaultNode node) {
         String refResource = rule.getRefResource();
         int strategy = rule.getStrategy();
@@ -96,16 +113,21 @@ public class FlowRuleChecker {
             return null;
         }
 
+        // 流控模式如果是“关联”
         if (strategy == RuleConstant.STRATEGY_RELATE) {
+            // 返回关联资源的ClusterNode
             return ClusterBuilderSlot.getClusterNode(refResource);
         }
 
+        // 流控模式如果是“链路”
         if (strategy == RuleConstant.STRATEGY_CHAIN) {
+            // 关联资源需等于context name，则返回入参的DefaultNode
             if (!refResource.equals(context.getName())) {
                 return null;
             }
             return node;
         }
+
         // No node.
         return null;
     }

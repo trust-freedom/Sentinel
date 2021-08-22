@@ -91,6 +91,8 @@ public class ContextUtil {
      * of the invocation chain. New {@link EntranceNode} will be created if
      * current context does't have one. Note that same context name will share
      * same {@link EntranceNode} globally.
+     * 一个Context与一个EntranceNode绑定，如果没有则创建EntranceNode
+     * 名字相同的Context共享一个EntranceNode
      * </p>
      * <p>
      * The origin node will be created in {@link com.alibaba.csp.sentinel.slots.clusterbuilder.ClusterBuilderSlot}.
@@ -98,6 +100,9 @@ public class ContextUtil {
      * {@link Node}, meaning that total amount of created origin statistic nodes will be:<br/>
      * {@code distinct resource name amount * distinct origin count}.<br/>
      * So when there are too many origins, memory footprint should be carefully considered.
+     * origin node会在ClusterBuilderSlot中被创建
+     * 注意，资源不同，来源不同，都会创建不同的origin node，也就是不是同样来源于app1，就公用一个origin node
+     * 所以当origin太多时，内存占用要慎重考虑
      * </p>
      * <p>
      * Same resource in different context will count separately, see {@link NodeSelectorSlot}.
@@ -107,7 +112,7 @@ public class ContextUtil {
      * @param origin the origin of this invocation, usually the origin could be the Service
      *               Consumer's app name. The origin is useful when we want to control different
      *               invoker/consumer separately.
-     * @return The invocation context of the current thread
+     * @return The invocation context of the current thread  当前线程的调用上下文
      */
     public static Context enter(String name, String origin) {
         if (Constants.CONTEXT_DEFAULT_NAME.equals(name)) {
@@ -142,6 +147,7 @@ public class ContextUtil {
                                 return NULL_CONTEXT;
                             } else {
                                 // 创建一个EntranceNode
+                                // 以context name创建的资源
                                 node = new EntranceNode(new StringResourceWrapper(name, EntryType.IN), null);
                                 // Add entrance node.
                                 // 将新建的EntranceNode添加到ROOT

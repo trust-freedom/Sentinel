@@ -67,46 +67,59 @@ public class ExceptionCircuitBreaker extends AbstractCircuitBreaker {
         if (entry == null) {
             return;
         }
+        // 当前Entry的错误信息
         Throwable error = entry.getError();
+        // 当前时间窗口的错误统计
         SimpleErrorCounter counter = stat.currentWindow().value();
+        // 若当前Entry有错误，ErrorCounter错误数+1
         if (error != null) {
             counter.getErrorCount().add(1);
         }
+        // ErrorCounter总数+1
         counter.getTotalCount().add(1);
 
+        // 处理断路器状态
         handleStateChangeWhenThresholdExceeded(error);
     }
 
     private void handleStateChangeWhenThresholdExceeded(Throwable error) {
+        // 当前OPEN状态，直接返回
         if (currentState.get() == State.OPEN) {
             return;
         }
-        
+
+        // 当前HALF_OPEN状态
         if (currentState.get() == State.HALF_OPEN) {
             // In detecting request
+            // 当前是检测请求，没有错误，HALF_OPEN->CLOSED
             if (error == null) {
                 fromHalfOpenToClose();
-            } else {
+            } else { // 有错误，HALF_OPEN->OPEN
                 fromHalfOpenToOpen(1.0d);
             }
             return;
         }
-        
-        List<SimpleErrorCounter> counters = stat.values();
+
+        // 下面操作根据统计值判断是否将状态置为OPEN，即开启熔断
+        // 获取整个滑动窗口的聚合值列表
+        List<SimpleErrorCounter> counters = stat.values(); // SimpleErrorCounter
         long errCount = 0;
         long totalCount = 0;
         for (SimpleErrorCounter counter : counters) {
             errCount += counter.errorCount.sum();
             totalCount += counter.totalCount.sum();
         }
+        // 没有达到最小请求数量
         if (totalCount < minRequestAmount) {
             return;
         }
         double curCount = errCount;
+        // 错误比例策略
         if (strategy == DEGRADE_GRADE_EXCEPTION_RATIO) {
             // Use errorRatio
             curCount = errCount * 1.0d / totalCount;
-        }
+        } // else 错误数策略
+        // 超过阈值，则将状态置为OPEN
         if (curCount > threshold) {
             transformToOpen(curCount);
         }
