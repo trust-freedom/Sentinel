@@ -29,12 +29,17 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
  * The basic metric class in Sentinel using a {@link BucketLeapArray} internal.
+ * 一个基本的统计类，内部使用了 BucketLeapArray
  *
  * @author jialiang.linjl
  * @author Eric Zhao
  */
+// 这是一个使用数组保存数据的计量器类
 public class ArrayMetric implements Metric {
 
+    // 数据就保存在这个LeapArray中
+    // LeapArray数组中的元素是WindowWrap
+    // MetricBucket表示样本窗口WindowWrap中保存的数据类型
     private final LeapArray<MetricBucket> data;
 
     public ArrayMetric(int sampleCount, int intervalInMs) {
@@ -106,10 +111,17 @@ public class ArrayMetric implements Metric {
 
     @Override
     public long pass() {
+        // 原本是 获取当前时间点所在的样本窗口
+        // 更新array中当前时间点所在的样本窗口实例中的数据
         data.currentWindow();
         long pass = 0;
+        // 将当前时间窗口中的所有样本窗口统计的value记录到result中
+        // 遍历所有样本窗口，若当前遍历实例为空 或 已经过时 的不会统计
+        // 即如果当前时间窗口内有2个样本窗口，但都是过时的历史数据
+        // 此时尽量请求查看pass落在第二个样本窗口，而第一个样本窗口的数据已是不知道多久前过时的数据，就不会统计在内
         List<MetricBucket> list = data.values();
 
+        // 将list中所有pass维度的统计数据取出并求和
         for (MetricBucket window : list) {
             pass += window.pass();
         }
@@ -241,7 +253,12 @@ public class ArrayMetric implements Metric {
 
     @Override
     public void addPass(int count) {
+        // 获取当前时间点所在的样本窗口
+        // currentWindow(TimeUtil.currentTimeMillis())
         WindowWrap<MetricBucket> wrap = data.currentWindow();
+        // 将当前请求的计数量添加到当前样本窗口的统计数据中
+        // wrap.value()是MetricBucket，即样本窗口中的统计数据类型
+        // addPass是add(MetricEvent.PASS, n)
         wrap.value().addPass(count);
     }
 

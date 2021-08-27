@@ -69,7 +69,6 @@ public class StatisticSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
             node.addPassRequest(count);
 
             // 如果originNode不为空，也增加originNode的线程数和通过请求数
-            // 是为了限制
             if (context.getCurEntry().getOriginNode() != null) {
                 // Add count for origin node.
                 context.getCurEntry().getOriginNode().increaseThreadNum();

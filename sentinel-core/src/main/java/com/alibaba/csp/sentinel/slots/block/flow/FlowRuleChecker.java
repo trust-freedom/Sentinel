@@ -106,7 +106,7 @@ public class FlowRuleChecker {
      * 选取关联Node
      */
     static Node selectReferenceNode(FlowRule rule, Context context, DefaultNode node) {
-        String refResource = rule.getRefResource();
+        String refResource = rule.getRefResource(); // 关联资源
         int strategy = rule.getStrategy();
 
         if (StringUtil.isEmpty(refResource)) {
@@ -139,30 +139,43 @@ public class FlowRuleChecker {
 
     static Node selectNodeByRequesterAndStrategy(/*@NonNull*/ FlowRule rule, Context context, DefaultNode node) {
         // The limit app should not be empty.
-        String limitApp = rule.getLimitApp();
-        int strategy = rule.getStrategy();
-        String origin = context.getOrigin();
+        String limitApp = rule.getLimitApp(); // flow规则配置的limitApp
+        int strategy = rule.getStrategy();    // 流控模式：直接拒绝 or ?
+        String origin = context.getOrigin();  // 当前请求来源
 
+        // 若规则中limitApp等于当前请求来源，并且当前请求来源不是default or other
         if (limitApp.equals(origin) && filterOrigin(origin)) {
+            // 直接拒绝
             if (strategy == RuleConstant.STRATEGY_DIRECT) {
                 // Matches limit origin, return origin statistic node.
+                // 返回 OriginNode
                 return context.getOriginNode();
             }
 
+            // 流控模式可能是"关联"或"链路"，选取相关node
             return selectReferenceNode(rule, context, node);
-        } else if (RuleConstant.LIMIT_APP_DEFAULT.equals(limitApp)) {
+        }
+        // 若规则中limitApp等于default
+        else if (RuleConstant.LIMIT_APP_DEFAULT.equals(limitApp)) {
+            // 直接拒绝
             if (strategy == RuleConstant.STRATEGY_DIRECT) {
                 // Return the cluster node.
+                // 返回 ClusterNode
                 return node.getClusterNode();
             }
 
+            // 流控模式可能是"关联"或"链路"，选取相关node
             return selectReferenceNode(rule, context, node);
-        } else if (RuleConstant.LIMIT_APP_OTHER.equals(limitApp)
+        }
+        // 若规则中limitApp等于other，并且根据规则配置，当前请求origin就是属于other范畴
+        else if (RuleConstant.LIMIT_APP_OTHER.equals(limitApp)
             && FlowRuleManager.isOtherOrigin(origin, rule.getResource())) {
+            // 直接拒绝
             if (strategy == RuleConstant.STRATEGY_DIRECT) {
                 return context.getOriginNode();
             }
 
+            // 流控模式可能是"关联"或"链路"，选取相关node
             return selectReferenceNode(rule, context, node);
         }
 

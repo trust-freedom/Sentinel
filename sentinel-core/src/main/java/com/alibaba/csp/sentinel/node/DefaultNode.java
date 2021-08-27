@@ -28,6 +28,7 @@ import com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot;
 /**
  * <p>
  * A {@link Node} used to hold statistics for specific resource name in the specific context.
+ * DefaultNode只统计了某个资源在某个Context下的数据
  * Each distinct resource in each distinct {@link Context} will corresponding to a {@link DefaultNode}.
  * </p>
  * <p>
@@ -52,6 +53,7 @@ public class DefaultNode extends StatisticNode {
 
     /**
      * Associated cluster node.
+     * 关联的ClusterNode，只与资源有关
      */
     private ClusterNode clusterNode;
 
@@ -138,7 +140,10 @@ public class DefaultNode extends StatisticNode {
 
     @Override
     public void addPassRequest(int count) {
+        // 调用StatisticNode.addPassRequest
+        // 增加当前入口下的DefaultNode中的统计数据
         super.addPassRequest(count);
+        // 增加当前资源的ClusterNode中的全局统计数据
         this.clusterNode.addPassRequest(count);
     }
 

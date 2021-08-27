@@ -90,15 +90,20 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 public class StatisticNode implements Node {
 
     /**
-     * Holds statistics of the recent {@code INTERVAL} milliseconds. The {@code INTERVAL} is divided into time spans
-     * by given {@code sampleCount}.
+     * Holds statistics of the recent {@code INTERVAL} milliseconds.
+     * The {@code INTERVAL} is divided into time spans by given {@code sampleCount}.
+     * 保持着最近INTERVAL=1000ms时间间隔的数据，INTERVAL时间间隔被分为sampleCount=2个样本窗口
      */
-    private transient volatile Metric rollingCounterInSecond = new ArrayMetric(SampleCountProperty.SAMPLE_COUNT,
-        IntervalProperty.INTERVAL);
+    // 定义了一个使用数组保存数据的计量器
+    private transient volatile Metric rollingCounterInSecond =
+            // SAMPLE_COUNT，样本窗口数量，默认值为2
+            // INTERVAL，时间窗长度，默认值1000毫秒
+            new ArrayMetric(SampleCountProperty.SAMPLE_COUNT, IntervalProperty.INTERVAL);
 
     /**
      * Holds statistics of the recent 60 seconds. The windowLengthInMs is deliberately set to 1000 milliseconds,
      * meaning each bucket per second, in this way we can get accurate statistics of each second.
+     * 统计最近60s的数据，样本窗口长度故意被设置为1000ms，意思是每桶每秒，这样我们就可以得到每一秒的准确统计数据
      */
     private transient Metric rollingCounterInMinute = new ArrayMetric(60, 60 * 1000, false);
 
@@ -247,6 +252,7 @@ public class StatisticNode implements Node {
 
     @Override
     public void addPassRequest(int count) {
+        // 为滑动计数器增加本次访问的数据
         rollingCounterInSecond.addPass(count);
         rollingCounterInMinute.addPass(count);
     }

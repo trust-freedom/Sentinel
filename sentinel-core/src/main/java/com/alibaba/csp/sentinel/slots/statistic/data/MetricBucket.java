@@ -25,13 +25,22 @@ import java.util.concurrent.atomic.LongAdder;
  * @author jialiang.linjl
  * @author Eric Zhao
  */
+// 统计数据的封装类
 public class MetricBucket {
 
+    /**
+     *  统计的数据存放在这里
+     *  这里要统计的数据是多维度的，这些维度类型在MetricEvent枚举中
+     *  MetricEvent包含 PASS、BLOCK、EXCEPTION、SUCCESS、RT、OCCUPIED_PASS
+     *  也就是说每个样本窗口中，统计了这些维度的数据
+     */
     private final LongAdder[] counters;
 
     private volatile long minRt;
 
     public MetricBucket() {
+        // 创建LongAdder数组长度为MetricEvent枚举的数量
+        // 以枚举的序号为数组下标
         MetricEvent[] events = MetricEvent.values();
         this.counters = new LongAdder[events.length];
         for (MetricEvent event : events) {
@@ -59,6 +68,7 @@ public class MetricBucket {
      * @return new metric bucket in initial state
      */
     public MetricBucket reset() {
+        // 将每个维度的统计数据清零
         for (MetricEvent event : MetricEvent.values()) {
             counters[event.ordinal()].reset();
         }
